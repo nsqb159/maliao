@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🍄 63大冒险 · 大屏版</title>
+  <title>🍄 63大冒险 · Boss战</title>
   <style>
     * {
       margin: 0;
@@ -50,9 +50,9 @@
     }
     .stats {
       display: flex;
-      gap: 48px;
+      gap: 28px;
       background: #1e1a16;
-      padding: 14px 40px;
+      padding: 14px 28px;
       border-radius: 80px;
       box-shadow: inset 0 6px 6px rgba(0,0,0,0.5), 0 8px 0 #3b2e22;
       border-bottom: 3px solid #ab8e64;
@@ -60,14 +60,979 @@
     .stat {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
     }
     .stat span:first-child {
-      font-size: 38px;
+      font-size: 30px;
       filter: drop-shadow(0 4px 3px black);
     }
     .stat .value {
-      font-size: 38px;
+      font-size: 30px;
+      font-weight: bold;
+      color: #fee7b0;
+      text-shadow: 4px 4px 0 #7b4f2b;
+      min-width: 60px;
+      text-align: right;
+      letter-spacing: 2px;
+    }
+    .restart-btn {
+      background: #e9b13b;
+      border: none;
+      border-bottom: 8px solid #8b5e1a;
+      color: #1f2c0e;
+      font-weight: bold;
+      font-size: 28px;
+      padding: 12px 38px;
+      border-radius: 60px;
+      box-shadow: 0 8px 0 #5a3f18, 0 10px 16px black;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.05s ease-in;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+    }
+    .restart-btn:active {
+      transform: translateY(6px);
+      box-shadow: 0 4px 0 #5a3f18, 0 8px 14px black;
+      border-bottom-width: 4px;
+    }
+    .restart-btn:hover {
+      background: #f5c45e;
+    }
+    .hint {
+      color: #d0d0e0;
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 20px;
+      text-shadow: 3px 3px 0 #0f0f1a;
+    }
+    .hint kbd {
+      background: #2f2b26;
+      color: #fad98b;
+      padding: 6px 16px;
+      border-radius: 40px;
+      margin: 0 6px;
+      border-bottom: 4px solid #856f42;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+<div class="game-container">
+  <canvas id="gameCanvas" width="1000" height="600"></canvas>
+  
+  <div class="panel">
+    <div class="stats">
+      <div class="stat">
+        <span>🏆</span>
+        <span class="value" id="levelDisplay">1</span>
+      </div>
+      <div class="stat">
+        <span>❤️</span>
+        <span class="value" id="healthDisplay">3</span>
+      </div>
+      <div class="stat">
+        <span>🪙</span>
+        <span class="value" id="coinDisplay">00/05</span>
+      </div>
+      <div class="stat">
+        <span>⭐</span>
+        <span class="value" id="scoreDisplay">0000</span>
+      </div>
+    </div>
+    <button class="restart-btn" id="restartButton">▶ 开始</button>
+  </div>
+  <div class="hint">
+    <kbd>←</kbd><kbd>→</kbd> 移动 · <kbd>空格</kbd> 跳跃 · <kbd>F</kbd> 攻击 · 拾取🗡️武器
+  </div>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const levelSpan = document.getElementById('levelDisplay');
+    const healthSpan = document.getElementById('healthDisplay');
+    const coinSpan = document.getElementById('coinDisplay');
+    const scoreSpan = document.getElementById('scoreDisplay');
+
+    // ----- 图片加载 -----
+    const playerImage = new Image();
+    playerImage.src = 'https://i.ibb.co/M58br8Sv/image.png';
+    playerImage.crossOrigin = 'Anonymous';
+    
+    const enemyImage = new Image();
+    enemyImage.src = 'https://i.ibb.co/N26bH2kj/image.png';
+    enemyImage.crossOrigin = 'Anonymous';
+    
+    const starImage = new Image();
+    starImage.src = 'https://i.ibb.co/218bD5bR/73aaeac5-3e1d-4cb3-b884-0a1cb6b3908f.png';
+    starImage.crossOrigin = 'Anonymous';
+    
+    // ===== 新增：Boss、武器、投射物图片 =====
+    const bossImage = new Image();
+    bossImage.src = 'https://i.ibb.co/s9FQLH58/image.png';
+    bossImage.crossOrigin = 'Anonymous';
+    
+    const weaponImage = new Image();
+    weaponImage.src = 'https://i.ibb.co/dssBKvfQ/image.png';
+    weaponImage.crossOrigin = 'Anonymous';
+    
+    const projectileImage = new Image();
+    projectileImage.src = 'https://i.ibb.co/dssBKvfQ/image.png';
+    projectileImage.crossOrigin = 'Anonymous';
+    
+    const fireballImage = new Image();
+    fireballImage.src = 'https://i.ibb.co/gF7jdNfN/image.png';
+    fireballImage.crossOrigin = 'Anonymous';
+    
+    // ===== 尺寸参数 =====
+    const GROUND_Y = 500;
+    const PLAYER_WIDTH = 52;
+    const PLAYER_HEIGHT = 64;
+    const ENEMY_WIDTH = 50;
+    const ENEMY_HEIGHT = 50;
+    
+    const GIANT_WIDTH = 78;
+    const GIANT_HEIGHT = 96;
+    
+    // 游戏模式
+    const MODE_NORMAL = 'normal';
+    const MODE_BOSS = 'boss';
+    let gameMode = MODE_NORMAL;
+    
+    // 游戏状态
+    let gameActive = false;
+    let gameOver = false;
+    let gameWin = false;
+    let levelTransition = false;
+    
+    // 关卡系统
+    let currentLevel = 1;
+    let coinsNeeded = 5;
+    let flagActive = false;
+    let flagX = 0;
+    const FLAG_WIDTH = 40;
+    const FLAG_HEIGHT = 70;
+    
+    let player = {
+      x: 140, y: GROUND_Y - PLAYER_HEIGHT,
+      vx: 0, vy: 0,
+      width: PLAYER_WIDTH, height: PLAYER_HEIGHT,
+      grounded: false,
+      invincible: false, invincibleTimer: 0,
+      giant: false, giantTimer: 0,
+      health: 5, maxHealth: 5,
+      hasWeapon: false,
+      attackCooldown: 0
+    };
+
+    let moveLeft = false;
+    let moveRight = false;
+    let attackPressed = false;
+    
+    const WALK_ACCEL = 1.5;
+    const WALK_MAX_SPEED = 7.0;
+    const FRICTION = 0.72;
+    
+    let enemies = [];
+    let coins = [];
+    let powerStars = [];
+    let weapons = [];
+    let projectiles = [];
+    
+    // Boss相关
+    let boss = null;
+    let bossHealth = 10;
+    let bossMaxHealth = 10;
+    let bossAttackTimer = 0;
+    
+    let coinsCollected = 0;
+    let totalCoinsCollected = 0;
+    let distanceScore = 0;
+    
+    let baseScrollSpeed = 3.8;
+    let currentScrollSpeed = baseScrollSpeed;
+    let enemyBaseSpeed = 2.8;
+    
+    let spawnTimer = 0;
+    let coinSpawnTimer = 0;
+    let starSpawnTimer = 0;
+    let weaponSpawnTimer = 0;
+    
+    let animationId = null;
+    
+    const GRAVITY = 0.65;
+    const JUMP_FORCE = -13.0;
+    const STOMP_BOUNCE = -8.0;
+    
+    const COIN_SIZE = 34;
+    const COIN_Y_OFFSET = 22;
+    const STAR_SIZE = 40;
+    const WEAPON_SIZE = 40;
+    
+    const MIN_PLAYER_X = 10;
+    const MAX_PLAYER_X = canvas.width - PLAYER_WIDTH - 10;
+    
+    let floatingTexts = [];
+    
+    function updateUI() {
+      levelSpan.textContent = currentLevel;
+      healthSpan.textContent = player.health;
+      coinSpan.textContent = gameMode === MODE_BOSS ? 
+        `❤️${bossHealth}/${bossMaxHealth}` : 
+        `${coinsCollected}/${coinsNeeded}`;
+      scoreSpan.textContent = Math.min(9999, Math.floor(distanceScore + totalCoinsCollected * 100)).toString().padStart(4, '0');
+    }
+
+    function addFloatingText(text, x, y, color = '#FFD700') {
+      floatingTexts.push({ text, x, y, color, life: 55, vy: -1.5 });
+    }
+
+    function applyLevelDifficulty() {
+      baseScrollSpeed = 3.8 + (currentLevel - 1) * 0.6;
+      enemyBaseSpeed = 2.8 + (currentLevel - 1) * 0.4;
+      coinsNeeded = 5 + (currentLevel - 1) * 2;
+    }
+
+    // 进入Boss战
+    function enterBossMode() {
+      gameMode = MODE_BOSS;
+      gameActive = true;
+      levelTransition = false;
+      
+      // 清空普通敌人和金币
+      enemies = [];
+      coins = [];
+      powerStars = [];
+      projectiles = [];
+      
+      // 创建Boss
+      bossMaxHealth = 10 + currentLevel * 3;
+      bossHealth = bossMaxHealth;
+      boss = {
+        x: canvas.width - 200,
+        y: GROUND_Y - 120,
+        width: 120,  // 调大一点适应图片
+        height: 120,
+        vx: 0,
+        vy: 0,
+        grounded: true
+      };
+      
+      // 玩家位置调整
+      player.x = 100;
+      player.y = GROUND_Y - player.height;
+      player.vy = 0;
+      
+      // 生成一把武器
+      weapons.push({
+        x: 300,
+        y: GROUND_Y - WEAPON_SIZE - 10,
+        width: WEAPON_SIZE,
+        height: WEAPON_SIZE
+      });
+      
+      addFloatingText('👹 BOSS 战！ 👹', 400, 200, '#FF4444');
+      updateUI();
+    }
+
+    function resetLevel() {
+      gameMode = MODE_NORMAL;
+      flagActive = false;
+      levelTransition = false;
+      
+      player.x = 140;
+      player.y = GROUND_Y - PLAYER_HEIGHT;
+      player.vx = 0; player.vy = 0;
+      player.invincible = false;
+      player.invincibleTimer = 0;
+      player.giant = false;
+      player.giantTimer = 0;
+      player.width = PLAYER_WIDTH;
+      player.height = PLAYER_HEIGHT;
+      player.hasWeapon = false;
+      player.attackCooldown = 0;
+      
+      moveLeft = false; moveRight = false;
+      enemies = [];
+      coins = [];
+      powerStars = [];
+      weapons = [];
+      projectiles = [];
+      boss = null;
+      floatingTexts = [];
+      
+      coinsCollected = 0;
+      distanceScore = 0;
+      
+      applyLevelDifficulty();
+      currentScrollSpeed = baseScrollSpeed;
+      
+      spawnTimer = 30;
+      coinSpawnTimer = 20;
+      starSpawnTimer = 150;
+      weaponSpawnTimer = 0;
+      
+      updateUI();
+    }
+
+    function nextLevel() {
+      currentLevel++;
+      totalCoinsCollected += coinsCollected;
+      
+      if (player.health < player.maxHealth) {
+        player.health = Math.min(player.health + 1, player.maxHealth);
+      }
+      
+      resetLevel();
+      gameActive = true;
+      gameWin = false;
+      levelTransition = false;
+      
+      addFloatingText(`第 ${currentLevel} 关！`, 400, 250, '#FFD700');
+    }
+
+    function resetGame() {
+      gameActive = true;
+      gameOver = false;
+      gameWin = false;
+      levelTransition = false;
+      gameMode = MODE_NORMAL;
+      currentLevel = 1;
+      totalCoinsCollected = 0;
+      
+      player = {
+        x: 140, y: GROUND_Y - PLAYER_HEIGHT,
+        vx: 0, vy: 0,
+        width: PLAYER_WIDTH, height: PLAYER_HEIGHT,
+        grounded: false,
+        invincible: false, invincibleTimer: 0,
+        giant: false, giantTimer: 0,
+        health: 5, maxHealth: 5,
+        hasWeapon: false,
+        attackCooldown: 0
+      };
+      
+      moveLeft = false; moveRight = false;
+      enemies = []; coins = []; powerStars = []; weapons = []; projectiles = [];
+      boss = null; floatingTexts = [];
+      coinsCollected = 0; distanceScore = 0;
+      
+      applyLevelDifficulty();
+      currentScrollSpeed = baseScrollSpeed;
+      
+      spawnTimer = 30;
+      coinSpawnTimer = 20;
+      starSpawnTimer = 150;
+      flagActive = false;
+      
+      updateUI();
+    }
+
+    function rectCollide(r1, r2) {
+      return !(r2.x >= r1.x + r1.width || r2.x + r2.width <= r1.x ||
+               r2.y >= r1.y + r1.height || r2.y + r2.height <= r1.y);
+    }
+
+    // 玩家攻击
+    function attack() {
+      if (!player.hasWeapon || player.attackCooldown > 0) return;
+      
+      player.attackCooldown = 20;
+      
+      // 根据朝向发射飞镖
+      const dir = moveRight ? 1 : (moveLeft ? -1 : 1);
+      projectiles.push({
+        x: player.x + player.width/2,
+        y: player.y + player.height/2,
+        vx: dir * 8,
+        vy: 0,
+        width: 30,
+        height: 30,
+        damage: 1
+      });
+    }
+
+    function handleEnemyCollisions() {
+      const pr = { x: player.x, y: player.y, width: player.width, height: player.height };
+      
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        const er = { x: e.x, y: e.y, width: e.width, height: e.height };
+        if (!rectCollide(pr, er)) continue;
+        
+        const playerBottom = player.y + player.height;
+        const enemyTop = e.y;
+        const isFalling = player.vy >= 0;
+        const feetNearEnemyTop = playerBottom >= enemyTop && playerBottom <= enemyTop + 26;
+        
+        if (isFalling && feetNearEnemyTop) {
+          enemies.splice(i, 1);
+          player.vy = STOMP_BOUNCE;
+          player.grounded = false;
+          distanceScore += 150;
+          addFloatingText('💥爆踩龙哥!', e.x, e.y - 15, '#FFA500');
+          if (Math.random() < 0.3) {
+            coins.push({ x: e.x + 8, y: e.y - 8, width: COIN_SIZE, height: COIN_SIZE });
+          }
+        } else {
+          if (!player.invincible && !player.giant && gameActive && !levelTransition) {
+            player.health--;
+            player.invincible = true;
+            player.invincibleTimer = 100;
+            addFloatingText('-1 ❤️', player.x, player.y - 30, '#ff6666');
+            if (player.health <= 0) {
+              gameActive = false;
+              gameOver = true;
+              player.health = 0;
+            }
+            player.vx = (e.x < player.x) ? 6 : -6;
+            player.vy = -4;
+          }
+        }
+        updateUI();
+        break;
+      }
+    }
+
+    function handleBossCollision() {
+      if (!boss) return;
+      
+      const pr = { x: player.x, y: player.y, width: player.width, height: player.height };
+      const br = { x: boss.x, y: boss.y, width: boss.width, height: boss.height };
+      
+      if (rectCollide(pr, br)) {
+        if (!player.invincible && !player.giant) {
+          player.health = Math.max(0, player.health - 2);
+          player.invincible = true;
+          player.invincibleTimer = 100;
+          addFloatingText('-2 ❤️', player.x, player.y - 30, '#ff6666');
+          
+          if (player.health <= 0) {
+            gameActive = false;
+            gameOver = true;
+          }
+          
+          // 弹开
+          player.vx = (boss.x < player.x) ? 8 : -8;
+          player.vy = -6;
+          updateUI();
+        }
+      }
+    }
+
+    function collectStars() {
+      const pr = { x: player.x, y: player.y, width: player.width, height: player.height };
+      for (let i=powerStars.length-1; i>=0; i--) {
+        const s = powerStars[i];
+        if (rectCollide(pr, { x: s.x, y: s.y, width: s.width, height: s.height })) {
+          powerStars.splice(i,1);
+          
+          player.giant = true;
+          player.giantTimer = 300;
+          player.width = GIANT_WIDTH;
+          player.height = GIANT_HEIGHT;
+          player.y = GROUND_Y - player.height;
+          
+          addFloatingText('63神力巨人化！', player.x, player.y - 50, '#00FF88');
+          distanceScore += 100;
+        }
+      }
+    }
+
+    function collectWeapons() {
+      const pr = { x: player.x, y: player.y, width: player.width, height: player.height };
+      for (let i=weapons.length-1; i>=0; i--) {
+        const w = weapons[i];
+        if (rectCollide(pr, { x: w.x, y: w.y, width: w.width, height: w.height })) {
+          weapons.splice(i,1);
+          player.hasWeapon = true;
+          addFloatingText('🗡️ 获得武器！按F攻击', player.x, player.y - 40, '#88AAFF');
+        }
+      }
+    }
+
+    function collectCoins() {
+      const pr = { x: player.x, y: player.y, width: player.width, height: player.height };
+      for (let i=coins.length-1; i>=0; i--) {
+        const c = coins[i];
+        if (rectCollide(pr, { x: c.x, y: c.y, width: c.width, height: c.height })) {
+          coins.splice(i,1);
+          coinsCollected++;
+          distanceScore += 60;
+          addFloatingText('+60', c.x, c.y-8, '#f5e56b');
+          
+          if (gameMode === MODE_NORMAL && coinsCollected >= coinsNeeded && !flagActive && !levelTransition) {
+            flagActive = true;
+            flagX = canvas.width - 80;
+            addFloatingText('🚩 旗帜出现！', 700, 200, '#FF6347');
+          }
+        }
+      }
+    }
+
+    function checkFlagCollision() {
+      if (!flagActive || levelTransition || gameMode !== MODE_NORMAL) return;
+      
+      const pr = { x: player.x, y: player.y, width: player.width, height: player.height };
+      const fr = { x: flagX, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT };
+      
+      if (rectCollide(pr, fr)) {
+        levelTransition = true;
+        gameActive = false;
+        addFloatingText('🚩 解锁龙哥挑战！', 400, 250, '#FF6347');
+        
+        setTimeout(() => {
+          enterBossMode();
+        }, 1000);
+      }
+    }
+
+    function spawnEnemy() {
+      if (gameMode !== MODE_NORMAL) return;
+      enemies.push({ x: canvas.width, y: GROUND_Y - ENEMY_HEIGHT, width: ENEMY_WIDTH, height: ENEMY_HEIGHT });
+    }
+    
+    function spawnCoin() {
+      if (gameMode !== MODE_NORMAL) return;
+      coins.push({ x: canvas.width + 10, y: GROUND_Y - COIN_SIZE - COIN_Y_OFFSET - Math.random()*40, width: COIN_SIZE, height: COIN_SIZE });
+    }
+    
+    function spawnPowerStar() {
+      if (gameMode !== MODE_NORMAL) return;
+      powerStars.push({ x: canvas.width, y: GROUND_Y - 80 - Math.random()*60, width: STAR_SIZE, height: STAR_SIZE });
+    }
+
+    // Boss AI
+    function updateBoss() {
+      if (!boss || !gameActive) return;
+      
+      // Boss简单移动
+      boss.x += boss.vx;
+      boss.vx *= 0.95;
+      
+      // 边界
+      boss.x = Math.max(400, Math.min(canvas.width - boss.width - 10, boss.x));
+      
+      // 攻击计时
+      bossAttackTimer--;
+      if (bossAttackTimer <= 0) {
+        // 发射火球
+        projectiles.push({
+          x: boss.x,
+          y: boss.y + boss.height/2,
+          vx: -5,
+          vy: 0,
+          width: 35,
+          height: 35,
+          damage: 1,
+          isEnemy: true
+        });
+        bossAttackTimer = 80 + Math.floor(Math.random() * 60);
+      }
+      
+      // 随机移动
+      if (Math.random() < 0.02) {
+        boss.vx = (Math.random() - 0.5) * 5;
+      }
+    }
+
+    function updateGame() {
+      if (!gameActive || levelTransition) return;
+      
+      // 冷却
+      if (player.attackCooldown > 0) player.attackCooldown--;
+      if (player.invincible) {
+        player.invincibleTimer--;
+        if (player.invincibleTimer <= 0) player.invincible = false;
+      }
+      if (player.giant) {
+        player.giantTimer--;
+        if (player.giantTimer <= 0) {
+          player.giant = false;
+          player.width = PLAYER_WIDTH;
+          player.height = PLAYER_HEIGHT;
+          player.y = Math.min(player.y, GROUND_Y - player.height);
+        }
+      }
+      
+      // 移动
+      let dir = 0;
+      if (moveLeft) dir -= 1;
+      if (moveRight) dir += 1;
+      player.vx = dir ? player.vx + dir*WALK_ACCEL : player.vx * FRICTION;
+      if (player.vx > WALK_MAX_SPEED) player.vx = WALK_MAX_SPEED;
+      if (player.vx < -WALK_MAX_SPEED) player.vx = -WALK_MAX_SPEED;
+      player.x += player.vx;
+      
+      const maxX = canvas.width - player.width - 10;
+      player.x = Math.min(maxX, Math.max(MIN_PLAYER_X, player.x));
+      
+      player.vy += GRAVITY;
+      player.y += player.vy;
+      if (player.y >= GROUND_Y - player.height) {
+        player.y = GROUND_Y - player.height;
+        player.vy = 0;
+        player.grounded = true;
+      } else {
+        player.grounded = false;
+      }
+      
+      // 攻击
+      if (attackPressed && gameMode === MODE_BOSS) {
+        attack();
+      }
+      
+      if (gameMode === MODE_NORMAL) {
+        const speed = currentScrollSpeed;
+        enemies = enemies.filter(e => (e.x -= speed + enemyBaseSpeed) + e.width > 0);
+        coins = coins.filter(c => (c.x -= speed) + c.width > 0);
+        powerStars = powerStars.filter(s => (s.x -= speed) + s.width > 0);
+        
+        if (flagActive) {
+          flagX -= speed;
+          if (flagX + FLAG_WIDTH < 0) flagActive = false;
+        }
+        
+        distanceScore += speed * 0.5;
+        currentScrollSpeed = baseScrollSpeed + Math.floor(distanceScore / 500) * 0.5;
+        
+        if (--spawnTimer <= 0) { spawnEnemy(); spawnTimer = Math.max(40, 80 - currentLevel * 3) + Math.floor(Math.random()*35); }
+        if (--coinSpawnTimer <= 0) { spawnCoin(); coinSpawnTimer = 35 + Math.floor(Math.random()*40); if(Math.random()<0.3) spawnCoin(); }
+        if (--starSpawnTimer <= 0) { spawnPowerStar(); starSpawnTimer = 300 + Math.floor(Math.random()*250); }
+        
+        collectStars();
+        collectCoins();
+        handleEnemyCollisions();
+        checkFlagCollision();
+      } else if (gameMode === MODE_BOSS) {
+        // Boss模式
+        updateBoss();
+        
+        // 投射物更新
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+          const p = projectiles[i];
+          p.x += p.vx;
+          
+          // 边界移除
+          if (p.x < 0 || p.x > canvas.width) {
+            projectiles.splice(i, 1);
+            continue;
+          }
+          
+          if (p.isEnemy) {
+            // 敌人投射物打玩家
+            const pr = { x: player.x, y: player.y, width: player.width, height: player.height };
+            if (rectCollide(pr, p) && !player.invincible && !player.giant) {
+              player.health = Math.max(0, player.health - 1);
+              player.invincible = true;
+              player.invincibleTimer = 80;
+              addFloatingText('-1 ❤️', player.x, player.y - 30, '#ff6666');
+              projectiles.splice(i, 1);
+              if (player.health <= 0) {
+                gameActive = false;
+                gameOver = true;
+              }
+              updateUI();
+            }
+          } else {
+            // 玩家投射物打Boss
+            if (boss) {
+              const br = { x: boss.x, y: boss.y, width: boss.width, height: boss.height };
+              if (rectCollide(br, p)) {
+                bossHealth--;
+                projectiles.splice(i, 1);
+                addFloatingText('-1', boss.x + 40, boss.y - 20, '#FF6666');
+                
+                if (bossHealth <= 0) {
+                  // Boss击败
+                  gameWin = true;
+                  gameActive = false;
+                  addFloatingText('🎉 胜利！ 🎉', 400, 250, '#FFD700');
+                  setTimeout(() => {
+                    if (!gameOver) {
+                      nextLevel();
+                    }
+                  }, 2000);
+                }
+                updateUI();
+              }
+            }
+          }
+        }
+        
+        collectWeapons();
+        handleBossCollision();
+        floatingTexts = floatingTexts.filter(ft => { ft.life--; ft.y += ft.vy; return ft.life > 0; });
+        updateUI();
+      }
+    }
+
+    function jump() {
+      if (gameActive && !levelTransition && player.grounded) {
+        player.vy = JUMP_FORCE;
+        player.grounded = false;
+      }
+    }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, '#b1e2ff'); grad.addColorStop(0.8, '#f0e6b2');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, GROUND_Y-10);
+      
+      // Boss战背景变暗
+      if (gameMode === MODE_BOSS) {
+        ctx.fillStyle = '#00000033';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      
+      ctx.fillStyle = '#ffffffdd';
+      for (let i=0;i<4;i++) {
+        let cx = (i*300 + performance.now()*0.02 % 1200) - 200;
+        ctx.beginPath();
+        ctx.arc(cx, 70+i*30, 45, 0, Math.PI*2);
+        ctx.arc(cx+55, 55+i*25, 42, 0, Math.PI*2);
+        ctx.arc(cx+110, 70+i*30, 45, 0, Math.PI*2);
+        ctx.fill();
+      }
+      
+      ctx.fillStyle = '#7fb07f';
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y-15); ctx.lineTo(180, GROUND_Y-90); ctx.lineTo(450, GROUND_Y-40);
+      ctx.lineTo(750, GROUND_Y-100); ctx.lineTo(1000, GROUND_Y-60); ctx.lineTo(1000, GROUND_Y);
+      ctx.lineTo(0, GROUND_Y); ctx.fill();
+      
+      ctx.fillStyle = '#a77b4b'; ctx.fillRect(0, GROUND_Y-8, canvas.width, 28);
+      ctx.fillStyle = '#7c5e38'; ctx.fillRect(0, GROUND_Y, canvas.width, 30);
+      ctx.fillStyle = '#5f8a4b';
+      for (let i=0;i<canvas.width;i+=24) ctx.fillRect(i+5, GROUND_Y-14, 12, 18);
+      
+      // 旗帜
+      if (flagActive && gameMode === MODE_NORMAL) {
+        ctx.fillStyle = '#8B8B8B';
+        ctx.fillRect(flagX + 18, GROUND_Y - FLAG_HEIGHT, 6, FLAG_HEIGHT);
+        ctx.fillStyle = '#FF4444';
+        ctx.beginPath();
+        ctx.moveTo(flagX + 24, GROUND_Y - FLAG_HEIGHT + 5);
+        ctx.lineTo(flagX + 50, GROUND_Y - FLAG_HEIGHT + 15);
+        ctx.lineTo(flagX + 24, GROUND_Y - FLAG_HEIGHT + 25);
+        ctx.fill();
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(flagX + 21, GROUND_Y - FLAG_HEIGHT, 8, 0, Math.PI*2);
+        ctx.fill();
+      }
+      
+      // 星星
+      powerStars.forEach(s => {
+        if (starImage.complete && starImage.naturalWidth > 0) {
+          ctx.drawImage(starImage, s.x, s.y, s.width, s.height);
+        } else {
+          ctx.fillStyle = '#FFDF00';
+          ctx.beginPath();
+          ctx.arc(s.x+s.width/2, s.y+s.height/2, s.width/2, 0, Math.PI*2);
+          ctx.fill();
+        }
+      });
+      
+      // 武器（使用新图片）
+      weapons.forEach(w => {
+        if (weaponImage.complete && weaponImage.naturalWidth > 0) {
+          ctx.drawImage(weaponImage, w.x, w.y, w.width, w.height);
+        } else {
+          ctx.fillStyle = '#8888FF';
+          ctx.font = 'bold 36px "Courier New"';
+          ctx.fillText('🗡️', w.x, w.y + 32);
+        }
+      });
+      
+      // 金币
+      coins.forEach(c => {
+        ctx.shadowColor = '#f5e56b'; ctx.shadowBlur = 20;
+        ctx.fillStyle = '#FFD966';
+        ctx.beginPath();
+        ctx.ellipse(c.x+c.width/2, c.y+c.height/2, c.width/2, c.height/2, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.font = 'bold 28px "Courier New"'; ctx.fillStyle = '#b8860b';
+        ctx.fillText('💰', c.x+3, c.y+28);
+      });
+      
+      // 敌人
+      enemies.forEach(e => {
+        if (enemyImage.complete && enemyImage.naturalWidth > 0) {
+          ctx.drawImage(enemyImage, e.x, e.y, e.width, e.height);
+        } else {
+          ctx.fillStyle = '#8B4513'; ctx.fillRect(e.x, e.y, e.width, e.height);
+        }
+      });
+      
+      // Boss（使用新图片）
+      if (boss) {
+        if (bossImage.complete && bossImage.naturalWidth > 0) {
+          ctx.drawImage(bossImage, boss.x, boss.y, boss.width, boss.height);
+        } else {
+          ctx.fillStyle = '#8B0000';
+          ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+        }
+        
+        // Boss血条
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(boss.x, boss.y - 25, boss.width, 15);
+        const healthPercent = bossHealth / bossMaxHealth;
+        ctx.fillStyle = healthPercent > 0.5 ? '#00FF00' : '#FFAA00';
+        ctx.fillRect(boss.x, boss.y - 25, boss.width * healthPercent, 15);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(boss.x, boss.y - 25, boss.width, 15);
+      }
+      
+      // 投射物（区分玩家飞镖和Boss火球）
+      projectiles.forEach(p => {
+        if (p.isEnemy) {
+          // Boss火球
+          if (fireballImage.complete && fireballImage.naturalWidth > 0) {
+            ctx.drawImage(fireballImage, p.x - p.width/2, p.y - p.height/2, p.width, p.height);
+          } else {
+            ctx.fillStyle = '#FF4400';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.width/2, 0, Math.PI*2);
+            ctx.fill();
+          }
+        } else {
+          // 玩家飞镖
+          if (projectileImage.complete && projectileImage.naturalWidth > 0) {
+            ctx.drawImage(projectileImage, p.x - p.width/2, p.y - p.height/2, p.width, p.height);
+          } else {
+            ctx.fillStyle = '#4488FF';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.width/2, 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
+      });
+      
+      // 玩家
+      if (playerImage.complete && playerImage.naturalWidth > 0) {
+        if (!player.invincible || (player.invincible && Math.floor(Date.now()/120) % 2)) {
+          ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
+        }
+      } else {
+        ctx.fillStyle = player.giant ? '#FF6347' : '#2ecc71';
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+      }
+      
+      // 武器指示
+      if (player.hasWeapon) {
+        ctx.font = 'bold 24px "Courier New"';
+        ctx.fillStyle = '#88AAFF';
+        ctx.fillText('🗡️', player.x + player.width - 10, player.y - 5);
+      }
+      
+      // 巨人光环
+      if (player.giant) {
+        ctx.strokeStyle = '#00FF88';
+        ctx.lineWidth = 4;
+        ctx.shadowColor = '#00FF88';
+        ctx.shadowBlur = 20;
+        ctx.strokeRect(player.x - 2, player.y - 2, player.width + 4, player.height + 4);
+        ctx.shadowBlur = 0;
+      }
+      
+      // 飘字
+      floatingTexts.forEach(t => {
+        ctx.font = 'bold 28px "Courier New"'; ctx.fillStyle = t.color;
+        ctx.shadowBlur = 14; ctx.shadowColor = '#000';
+        ctx.fillText(t.text, t.x, t.y);
+        ctx.shadowBlur = 0;
+      });
+      
+      // UI提示
+      if (gameMode === MODE_NORMAL && !flagActive && gameActive) {
+        ctx.font = 'bold 20px "Courier New"';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.shadowBlur = 8;
+        ctx.fillText(`收集 ${coinsNeeded} 枚金币召唤旗帜`, 700, 50);
+      }
+      
+      if (gameMode === MODE_BOSS && gameActive) {
+        ctx.font = 'bold 24px "Courier New"';
+        ctx.fillStyle = '#FF6666';
+        ctx.fillText('👹 BOSS战 · 按F攻击', 350, 50);
+      }
+      
+      // 游戏结束/胜利
+      if (!gameActive && gameOver) {
+        ctx.fillStyle = '#000000cc'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.font = 'bold 56px "Courier New"'; ctx.fillStyle = '#fcd34d';
+        ctx.fillText('💀 你被龙哥打败了 💀', 200, 320);
+      } else if (!gameActive && !gameOver && !gameWin && gameMode !== MODE_BOSS) {
+        ctx.fillStyle = '#000000aa'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.font = 'bold 42px "Courier New"'; ctx.fillStyle = '#f7e05e';
+        ctx.fillText('🍄 按 空格[开始游戏]  🍄', 180, 330);
+      } else if (gameWin) {
+        ctx.fillStyle = '#000000aa'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.font = 'bold 48px "Courier New"'; ctx.fillStyle = '#FFD700';
+        ctx.fillText(`✨ 成功打败龙哥 ${currentLevel} 次！ ✨`, 220, 320);
+      }
+    }
+
+    function gameLoop() {
+      if (gameActive && !levelTransition) updateGame();
+      drawScene();
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function handleKeyDown(e) {
+      const k = e.key;
+      if (k === ' ' || k === 'Space' || k.startsWith('Arrow') || k === 'f' || k === 'F') e.preventDefault();
+      if (k === ' ' || k === 'Space') {
+        if (!gameActive && !gameOver && !gameWin) resetGame();
+        else if (gameActive) jump();
+      }
+      if (k === 'ArrowLeft' || k === 'a' || k === 'A') moveLeft = true;
+      if (k === 'ArrowRight' || k === 'd' || k === 'D') moveRight = true;
+      if (k === 'f' || k === 'F') attackPressed = true;
+    }
+    
+    function handleKeyUp(e) {
+      const k = e.key;
+      if (k === ' ' || k === 'Space' || k.startsWith('Arrow') || k === 'f' || k === 'F') e.preventDefault();
+      if (k === 'ArrowLeft' || k === 'a' || k === 'A') moveLeft = false;
+      if (k === 'ArrowRight' || k === 'd' || k === 'D') moveRight = false;
+      if (k === 'f' || k === 'F') attackPressed = false;
+    }
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    document.getElementById('restartButton').addEventListener('click', resetGame);
+    
+    canvas.addEventListener('click', () => {
+      if (!gameActive && !gameOver && !gameWin) resetGame();
+    });
+    
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (!gameActive && !gameOver && !gameWin) resetGame();
+      else if (gameActive) jump();
+    }, {passive: false});
+    
+    animationId = requestAnimationFrame(gameLoop);
+    gameActive = false; gameOver = false;
+    updateUI();
+    drawScene();
+    
+    window.addEventListener('beforeunload', () => cancelAnimationFrame(animationId));
+  })();
+</script>
+</body>
+</html>      font-size: 38px;
       font-weight: bold;
       color: #fee7b0;
       text-shadow: 4px 4px 0 #7b4f2b;
