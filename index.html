@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🍄 林克大冒险 · 大屏版</title>
+  <title>🍄 63大冒险 · 大屏版</title>
   <style>
     * {
       margin: 0;
@@ -311,7 +311,7 @@
           powerStars.splice(i,1);
           player.invincible = true;
           player.invincibleTimer = 240;
-          addFloatingText('✨ 无敌! ✨', player.x, player.y-40, '#FFD700');
+          addFloatingText('✨ 无敌63神力! ✨', player.x, player.y-40, '#FFD700');
           distanceScore += 100;
         }
       }
@@ -462,7 +462,7 @@
       if (!gameActive && gameOver) {
         ctx.fillStyle = '#000000cc'; ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.font = 'bold 56px "Courier New"'; ctx.fillStyle = '#fcd34d';
-        ctx.fillText('💀 GAME OVER 💀', 200, 320);
+        ctx.fillText('💀 被龙哥打败了 💀', 200, 320);
       } else if (!gameActive && !gameOver) {
         ctx.fillStyle = '#000000aa'; ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.font = 'bold 42px "Courier New"'; ctx.fillStyle = '#f7e05e';
