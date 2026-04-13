@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🍄 林克 · 自定义小怪版</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #1a1e2b 0%, #2a3342 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .game-container {
+      background: #0b0e14;
+      padding: 20px 20px 25px;
+      border-radius: 36px;
+      box-shadow: 0 20px 30px rgba(0,0,0,0.7), inset 0 0 0 2px #5f7a9c;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      display: block;
+      width: 800px;
+      height: 400px;
+      border-radius: 20px;
+      box-shadow: inset 0 0 20px #00000088, 0 10px 0 #3e2b1a;
+      background: #9ad9ff;
+      cursor: pointer;
+    }
+    .panel {
+      width: 100%;
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+    }
+    .stats {
+      display: flex;
+      gap: 32px;
+      background: #1e1a16;
+      padding: 10px 28px;
+      border-radius: 60px;
+      box-shadow: inset 0 5px 5px rgba(0,0,0,0.4), 0 6px 0 #3b2e22;
+      border-bottom: 2px solid #ab8e64;
+    }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .stat span:first-child {
+      font-size: 28px;
+      filter: drop-shadow(0 3px 2px black);
+    }
+    .stat .value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #fee7b0;
+      text-shadow: 3px 3px 0 #7b4f2b;
+      min-width: 70px;
+      text-align: right;
+      letter-spacing: 2px;
+    }
+    .restart-btn {
+      background: #e9b13b;
+      border: none;
+      border-bottom: 6px solid #8b5e1a;
+      color: #1f2c0e;
+      font-weight: bold;
+      font-size: 22px;
+      padding: 10px 30px;
+      border-radius: 48px;
+      box-shadow: 0 6px 0 #5a3f18, 0 8px 12px black;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.05s ease-in;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+    .restart-btn:active {
+      transform: translateY(5px);
+      box-shadow: 0 3px 0 #5a3f18, 0 6px 10px black;
+      border-bottom-width: 3px;
+    }
+    .restart-btn:hover {
+      background: #f5c45e;
+    }
+    .hint {
+      color: #bbbbcc;
+      margin-top: 12px;
+      font-weight: bold;
+      font-size: 18px;
+      text-shadow: 2px 2px 0 #0f0f1a;
+    }
+    .hint kbd {
+      background: #2f2b26;
+      color: #fad98b;
+      padding: 4px 10px;
+      border-radius: 30px;
+      margin: 0 4px;
+      border-bottom: 3px solid #856f42;
+    }
+  </style>
+</head>
+<body>
+<div class="game-container">
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  
+  <div class="panel">
+    <div class="stats">
+      <div class="stat">
+        <span>🪙</span>
+        <span class="value" id="coinDisplay">000</span>
+      </div>
+      <div class="stat">
+        <span>⭐</span>
+        <span class="value" id="scoreDisplay">0000</span>
+      </div>
+    </div>
+    <button class="restart-btn" id="restartButton">▶ 开始</button>
+  </div>
+  <div class="hint">
+    <kbd>←</kbd> <kbd>→</kbd> 或 <kbd>A</kbd> <kbd>D</kbd> 移动 · <kbd>空格</kbd> 跳跃
+  </div>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const coinSpan = document.getElementById('coinDisplay');
+    const scoreSpan = document.getElementById('scoreDisplay');
+
+    // ----- 角色图片加载 -----
+    const playerImage = new Image();
+    playerImage.src = 'https://i.ibb.co/M58br8Sv/image.png'; // 林克
+    playerImage.crossOrigin = 'Anonymous';
+    
+    // ----- 敌人图片加载 -----
+    const enemyImage = new Image();
+    enemyImage.src = 'https://i.ibb.co/N26bH2kj/image.png'; // 新小怪
+    enemyImage.crossOrigin = 'Anonymous';
+    
+    // 固定尺寸
+    const GROUND_Y = 340;        
+    const PLAYER_WIDTH = 34;      
+    const PLAYER_HEIGHT = 42;     
+    
+    // 敌人尺寸 (根据图片可微调)
+    const ENEMY_WIDTH = 32;
+    const ENEMY_HEIGHT = 32;
+    
+    // 游戏状态
+    let gameActive = false;       
+    let gameOver = false;        
+    
+    // 玩家属性
+    let player = {
+      x: 110,
+      y: GROUND_Y - PLAYER_HEIGHT,
+      vx: 0,
+      vy: 0,
+      width: PLAYER_WIDTH,
+      height: PLAYER_HEIGHT,
+      grounded: false
+    };
+
+    // 移动控制标志
+    let moveLeft = false;
+    let moveRight = false;
+    
+    const WALK_ACCEL = 1.2;
+    const WALK_MAX_SPEED = 5.5;
+    const FRICTION = 0.72;
+    
+    let enemies = [];            
+    let coins = [];             
+    
+    let coinsCollected = 0;
+    let distanceScore = 0;       
+    
+    const BASE_SCROLL_SPEED = 3.0;
+    let currentScrollSpeed = BASE_SCROLL_SPEED;
+    
+    let spawnTimer = 0;
+    let coinSpawnTimer = 0;
+    
+    let animationId = null;
+    
+    const GRAVITY = 0.55;
+    const JUMP_FORCE = -10.5;
+    
+    const ENEMY_BASE_SPEED = 2.2;
+    
+    const COIN_SIZE = 22;
+    const COIN_Y_OFFSET = 15;
+    
+    const MIN_PLAYER_X = 5;
+    const MAX_PLAYER_X = canvas.width - PLAYER_WIDTH - 5;
+    
+    function formatCoins(value) {
+      return value.toString().padStart(3, '0').slice(0,3);
+    }
+    function formatScore(value) {
+      return Math.min(9999, Math.floor(value)).toString().padStart(4, '0').slice(0,4);
+    }
+    
+    function updateUI() {
+      coinSpan.textContent = formatCoins(coinsCollected);
+      scoreSpan.textContent = formatScore(distanceScore);
+    }
+
+    function resetGame() {
+      gameActive = true;
+      gameOver = false;
+      
+      player = {
+        x: 110,
+        y: GROUND_Y - PLAYER_HEIGHT,
+        vx: 0,
+        vy: 0,
+        width: PLAYER_WIDTH,
+        height: PLAYER_HEIGHT,
+        grounded: false
+      };
+      
+      moveLeft = false;
+      moveRight = false;
+      
+      enemies = [];
+      coins = [];
+      
+      coinsCollected = 0;
+      distanceScore = 0;
+      
+      currentScrollSpeed = BASE_SCROLL_SPEED;
+      
+      spawnTimer = 0;
+      coinSpawnTimer = 0;
+      
+      updateUI();
+    }
+
+    function rectCollide(r1, r2) {
+      return !(r2.x >= r1.x + r1.width ||
+               r2.x + r2.width <= r1.x ||
+               r2.y >= r1.y + r1.height ||
+               r2.y + r2.height <= r1.y);
+    }
+
+    function checkEnemyCollision() {
+      const playerRect = {
+        x: player.x, y: player.y,
+        width: player.width, height: player.height
+      };
+      
+      for (let enemy of enemies) {
+        const enemyRect = {
+          x: enemy.x, y: enemy.y,
+          width: enemy.width, height: enemy.height
+        };
+        if (rectCollide(playerRect, enemyRect)) {
+          gameActive = false;
+          gameOver = true;
+          break;
+        }
+      }
+    }
+
+    function collectCoins() {
+      const playerRect = {
+        x: player.x, y: player.y,
+        width: player.width, height: player.height
+      };
+      
+      for (let i = coins.length - 1; i >= 0; i--) {
+        const coin = coins[i];
+        if (coin.collected) continue;
+        
+        const coinRect = {
+          x: coin.x, y: coin.y,
+          width: coin.width, height: coin.height
+        };
+        
+        if (rectCollide(playerRect, coinRect)) {
+          coin.collected = true;
+          coinsCollected++;
+          distanceScore += 50;
+          coins.splice(i, 1);
+        }
+      }
+    }
+
+    function spawnEnemy() {
+      const enemyY = GROUND_Y - ENEMY_HEIGHT;
+      enemies.push({
+        x: canvas.width,
+        y: enemyY,
+        width: ENEMY_WIDTH,
+        height: ENEMY_HEIGHT,
+        speed: ENEMY_BASE_SPEED
+      });
+    }
+
+    function spawnCoin() {
+      const coinY = GROUND_Y - COIN_SIZE - COIN_Y_OFFSET - Math.random() * 22;
+      coins.push({
+        x: canvas.width + 5,
+        y: Math.max(coinY, GROUND_Y - 50),
+        width: COIN_SIZE,
+        height: COIN_SIZE,
+        collected: false
+      });
+    }
+
+    function updateGame() {
+      if (!gameActive) return;
+      
+      let moveDir = 0;
+      if (moveLeft) moveDir -= 1;
+      if (moveRight) moveDir += 1;
+      
+      if (moveDir !== 0) {
+        player.vx += moveDir * WALK_ACCEL;
+      } else {
+        player.vx *= FRICTION;
+      }
+      
+      if (player.vx > WALK_MAX_SPEED) player.vx = WALK_MAX_SPEED;
+      if (player.vx < -WALK_MAX_SPEED) player.vx = -WALK_MAX_SPEED;
+      
+      player.x += player.vx;
+      if (player.x < MIN_PLAYER_X) {
+        player.x = MIN_PLAYER_X;
+        player.vx = 0;
+      }
+      if (player.x > MAX_PLAYER_X) {
+        player.x = MAX_PLAYER_X;
+        player.vx = 0;
+      }
+      
+      player.vy += GRAVITY;
+      player.y += player.vy;
+      
+      if (player.y >= GROUND_Y - player.height) {
+        player.y = GROUND_Y - player.height;
+        player.vy = 0;
+        player.grounded = true;
+      } else {
+        player.grounded = false;
+      }
+      
+      if (player.y < 0) {
+        player.y = 0;
+        player.vy = 0;
+      }
+      
+      for (let enemy of enemies) {
+        enemy.x -= (currentScrollSpeed + enemy.speed);
+      }
+      enemies = enemies.filter(enemy => enemy.x + enemy.width > 0);
+      
+      for (let coin of coins) {
+        coin.x -= currentScrollSpeed;
+      }
+      coins = coins.filter(coin => coin.x + coin.width > 0 && !coin.collected);
+      
+      distanceScore += currentScrollSpeed * 0.5;
+      currentScrollSpeed = BASE_SCROLL_SPEED + Math.floor(distanceScore / 600) * 0.7;
+      
+      spawnTimer -= 1;
+      if (spawnTimer <= 0) {
+        const baseDelay = Math.max(50, 90 - Math.floor(distanceScore / 400));
+        spawnEnemy();
+        spawnTimer = baseDelay + Math.floor(Math.random() * 35);
+      }
+      
+      coinSpawnTimer -= 1;
+      if (coinSpawnTimer <= 0) {
+        spawnCoin();
+        coinSpawnTimer = 40 + Math.floor(Math.random() * 55);
+        if (Math.random() < 0.4) {
+          spawnCoin();
+        }
+      }
+      
+      collectCoins();
+      checkEnemyCollision();
+      
+      updateUI();
+    }
+
+    function jump() {
+      if (!gameActive) return;
+      if (player.grounded) {
+        player.vy = JUMP_FORCE;
+        player.grounded = false;
+      }
+    }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // 天空
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      skyGrad.addColorStop(0, '#b1e2ff');
+      skyGrad.addColorStop(0.75, '#f0e6b2');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, canvas.width, GROUND_Y-8);
+      
+      // 云
+      ctx.fillStyle = '#ffffffdd';
+      for (let i = 0; i < 3; i++) {
+        const cloudX = (i * 220 + (performance.now()*0.02 % 400)) % 900 - 100;
+        ctx.beginPath();
+        ctx.arc(cloudX, 50 + i*20, 30, 0, Math.PI*2);
+        ctx.arc(cloudX+35, 40 + i*15, 28, 0, Math.PI*2);
+        ctx.arc(cloudX+70, 50 + i*20, 30, 0, Math.PI*2);
+        ctx.fill();
+      }
+      
+      // 小山
+      ctx.fillStyle = '#7fb07f';
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y-10);
+      ctx.lineTo(120, GROUND_Y-60);
+      ctx.lineTo(300, GROUND_Y-25);
+      ctx.lineTo(500, GROUND_Y-70);
+      ctx.lineTo(700, GROUND_Y-30);
+      ctx.lineTo(800, GROUND_Y-50);
+      ctx.lineTo(800, GROUND_Y);
+      ctx.lineTo(0, GROUND_Y);
+      ctx.fill();
+      
+      // 地面
+      ctx.fillStyle = '#a77b4b';
+      ctx.fillRect(0, GROUND_Y-6, canvas.width, 20);
+      ctx.fillStyle = '#7c5e38';
+      ctx.fillRect(0, GROUND_Y, canvas.width, 20);
+      ctx.fillStyle = '#5f8a4b';
+      for (let i=0;i<canvas.width;i+=18) {
+        ctx.fillRect(i+3, GROUND_Y-10, 8, 12);
+      }
+      ctx.strokeStyle = '#5d3f1e';
+      ctx.lineWidth = 2;
+      for (let i=0;i<canvas.width;i+=40) {
+        ctx.beginPath();
+        ctx.moveTo(i, GROUND_Y-4);
+        ctx.lineTo(i+15, GROUND_Y+6);
+        ctx.stroke();
+      }
+      
+      // 金币
+      coins.forEach(coin => {
+        ctx.shadowColor = '#f5e56b';
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = '#FFD966';
+        ctx.beginPath();
+        ctx.ellipse(coin.x+coin.width/2, coin.y+coin.height/2, coin.width/2, coin.height/2, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#F4C430';
+        ctx.beginPath();
+        ctx.ellipse(coin.x+coin.width/2-2, coin.y+coin.height/2-1, coin.width/3, coin.height/3, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#b8860b';
+        ctx.font = 'bold 18px "Courier New", monospace';
+        ctx.fillText('💰', coin.x+2, coin.y+18);
+      });
+      
+      // ----- 绘制敌人（使用新图片）-----
+      enemies.forEach(enemy => {
+        if (enemyImage.complete && enemyImage.naturalWidth > 0) {
+          ctx.drawImage(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
+        } else {
+          // 占位绘制
+          ctx.fillStyle = '#8B4513';
+          ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+          ctx.fillStyle = 'white';
+          ctx.font = '10px monospace';
+          ctx.fillText('?', enemy.x+10, enemy.y+20);
+        }
+      });
+      
+      // ----- 绘制角色（林克）-----
+      if (playerImage.complete && playerImage.naturalWidth > 0) {
+        ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
+      } else {
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '12px monospace';
+        ctx.fillText('加载中...', player.x+2, player.y+20);
+      }
+      
+      // 界面文字
+      if (!gameActive && gameOver) {
+        ctx.fillStyle = '#000000aa';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = 'bold 40px "Courier New", monospace';
+        ctx.fillStyle = '#fcd34d';
+        ctx.shadowColor = '#b45309';
+        ctx.shadowBlur = 16;
+        ctx.fillText('💀 GAME OVER 💀', 150, 200);
+        ctx.shadowBlur = 0;
+      } else if (!gameActive && !gameOver) {
+        ctx.fillStyle = '#00000099';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = 'bold 32px "Courier New", monospace';
+        ctx.fillStyle = '#f7e05e';
+        ctx.fillText('🍄 按 [开始] 或 移动跳跃 🍄', 140, 210);
+      }
+    }
+
+    function gameLoop() {
+      if (gameActive) {
+        updateGame();
+      }
+      drawScene();
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function handleKeyDown(e) {
+      const key = e.key;
+      if (key === ' ' || key === 'Space' || key.startsWith('Arrow')) {
+        e.preventDefault();
+      }
+      
+      if (key === ' ' || key === 'Space') {
+        if (!gameActive && !gameOver) {
+          resetGame();
+        } else if (gameActive) {
+          jump();
+        }
+      }
+      
+      if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+        moveLeft = true;
+      }
+      if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+        moveRight = true;
+      }
+    }
+    
+    function handleKeyUp(e) {
+      const key = e.key;
+      if (key === ' ' || key === 'Space' || key.startsWith('Arrow')) {
+        e.preventDefault();
+      }
+      if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+        moveLeft = false;
+      }
+      if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+        moveRight = false;
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    const restartBtn = document.getElementById('restartButton');
+    restartBtn.addEventListener('click', resetGame);
+    
+    canvas.addEventListener('click', () => {
+      if (!gameActive && !gameOver) resetGame();
+    });
+    
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (!gameActive && !gameOver) {
+        resetGame();
+      } else if (gameActive) {
+        jump();
+      }
+    }, {passive: false});
+    
+    animationId = requestAnimationFrame(gameLoop);
+    
+    gameActive = false;
+    gameOver = false;
+    updateUI();
+    drawScene();
+    
+    window.addEventListener('beforeunload', () => {
+      if (animationId) cancelAnimationFrame(animationId);
+    });
+    
+  })();
+</script>
+</body>
+</html>
