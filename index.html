@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🍄 超级马力欧 · GitHub Pages 完美版</title>
+  <title>🍄 超级马力欧 · 本地贴图完美版</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
     body { background:#0b0a1a; min-height:100vh; display:flex; justify-content:center; align-items:center; font-family:'Courier New',monospace; }
@@ -18,7 +18,6 @@
     .char-btn.active { background:#e74c3c; box-shadow:0 5px 0 #7b241c; }
     .toad-msg { color:#ffd966; font-size:14px; }
     .hint { color:#aaa; font-size:12px; margin-top:10px; text-align:center; }
-    .hint a { color:#ffd966; }
   </style>
 </head>
 <body>
@@ -40,26 +39,31 @@
     </div>
     <button id="restartBtn">🔄 重新开始</button>
   </div>
-  <div class="hint">
-    🎮 空格键重新开始 · 
-    <a href="https://github.com/你的用户名/mario-game" target="_blank">GitHub 仓库</a>
-  </div>
+  <div class="hint">🎮 空格键重新开始 · 所有图片来自本地 images/ 文件夹</div>
 </div>
 
 <script>
   (function(){
     "use strict";
 
-    // ==================== 贴图配置 (你的所有直链) ====================
+    // ==================== 获取 DOM 元素 (修复 livesSpan 未定义) ====================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const livesSpan = document.getElementById('livesDisplay');
+    const scoreSpan = document.getElementById('scoreDisplay');
+    const stateDisplay = document.getElementById('stateDisplay');
+    const toadMessage = document.getElementById('toadMessage');
+
+    // ==================== 贴图配置 (使用相对路径，无 CORS) ====================
     const imagePaths = {
-      mario:    'https://github.com/nsqb159/maliao/raw/main/icon.png',
-      luigi:    'https://github.com/nsqb159/maliao/raw/main/1%20(2).png',
-      goomba:   'https://cik07-cos.7moor-fs2.com/im/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/950f372fb1ba57e7/libaobao%20(1).png',
-      bowser:   'https://cik07-cos.7moor-fs2.com/im/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/904d46c89dc7a9a0/kuba%20(1).png',
-      mushroom: 'https://i.ibb.co/mVTr9xLC/73aaeac5-3e1d-4cb3-b884-0a1cb6b3908f.png',
-      coin:     'https://i.ibb.co/JP49htS/jb-1.png',
-      peach:    'https://i.ibb.co/VcfJJ17q/abac-1.png',
-      tiles:    'https://docs.unity3d.com/cn/2019.4/uploads/Main/TilePalette_ToolRow.png'
+      mario:    'images/mario.png',
+      luigi:    'images/luigi.png',
+      goomba:   'images/goomba.png',
+      bowser:   'images/bowser.png',
+      mushroom: 'images/mushroom.png',
+      coin:     'images/coin.png',
+      peach:    'images/peach.png',
+      tiles:    'images/tiles.png'
     };
 
     const images = {};
@@ -70,7 +74,6 @@
       if (totalImages === 0) return callback();
       for (let key in imagePaths) {
         const img = new Image();
-        img.crossOrigin = 'Anonymous';
         img.onload = () => {
           loadedCount++;
           if (loadedCount === totalImages) callback();
@@ -393,6 +396,7 @@
         ctx.fillStyle = '#ffb6c1'; ctx.fillRect(2400, 400, 40, 60);
       }
 
+      // 奇诺比奥（纯色绘制）
       ctx.fillStyle = '#f0d0b0'; ctx.fillRect(100, 430, 30, 40);
       ctx.fillStyle = '#c44'; ctx.beginPath(); ctx.arc(115, 420, 15, 0, 2*Math.PI); ctx.fill();
       if (toadTalkTimer > 0) {
