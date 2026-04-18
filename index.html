@@ -3,104 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🍄 超级马力欧 · 全贴图豪华版</title>
+  <title>🍄 超级马力欧 · GitHub Pages 完美版</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      user-select: none;
-    }
-    body {
-      background: #0b0a1a;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: 'Courier New', monospace;
-    }
-    .game-container {
-      background: #1e1b3a;
-      padding: 24px;
-      border-radius: 48px;
-      box-shadow: 0 20px 0 #0f0c1e, 0 30px 40px #00000080;
-      border: 3px solid #6d5c9e;
-    }
-    canvas {
-      display: block;
-      margin: 0 auto;
-      width: 960px;
-      height: 540px;
-      image-rendering: crisp-edges;
-      border-radius: 24px;
-      box-shadow: inset 0 0 0 3px #2a2340, 0 0 0 4px #a48cc0;
-      background: #5c94fc;
-      cursor: pointer;
-    }
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 18px 12px 4px 12px;
-      color: #ffe484;
-      text-shadow: 3px 3px 0 #aa4e1c;
-      font-size: 22px;
-    }
-    .controls {
-      display: flex;
-      gap: 30px;
-      background: #1a1530cc;
-      padding: 8px 28px;
-      border-radius: 60px;
-      backdrop-filter: blur(2px);
-      border: 2px solid #b89ad0;
-      color: #dfc9ff;
-      font-size: 16px;
-    }
-    button {
-      background: #f5c542;
-      border: none;
-      color: #1d1135;
-      font-weight: bold;
-      font-size: 20px;
-      padding: 10px 30px;
-      border-radius: 50px;
-      box-shadow: 0 7px 0 #9e6018;
-      cursor: pointer;
-      font-family: inherit;
-      border: 3px solid #ffeaa6;
-      transition: 0.05s linear;
-      letter-spacing: 1px;
-    }
-    button:active {
-      transform: translateY(5px);
-      box-shadow: 0 2px 0 #9e6018;
-    }
-    .character-select {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 10px;
-    }
-    .char-btn {
-      background: #3f3264;
-      color: white;
-      box-shadow: 0 5px 0 #1e1530;
-      font-size: 16px;
-      padding: 8px 24px;
-    }
-    .char-btn.active {
-      background: #e74c3c;
-      box-shadow: 0 5px 0 #7b241c;
-    }
-    .toad-msg {
-      color: #ffd966;
-      font-size: 14px;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+    body { background:#0b0a1a; min-height:100vh; display:flex; justify-content:center; align-items:center; font-family:'Courier New',monospace; }
+    .game-container { background:#1e1b3a; padding:24px; border-radius:48px; box-shadow:0 20px 0 #0f0c1e,0 30px 40px #00000080; border:3px solid #6d5c9e; }
+    canvas { display:block; margin:0 auto; width:960px; height:540px; image-rendering:crisp-edges; border-radius:24px; box-shadow:inset 0 0 0 3px #2a2340,0 0 0 4px #a48cc0; background:#5c94fc; cursor:pointer; }
+    .status-bar { display:flex; justify-content:space-between; align-items:center; margin:18px 12px 4px 12px; color:#ffe484; text-shadow:3px 3px 0 #aa4e1c; font-size:22px; }
+    .controls { display:flex; gap:30px; background:#1a1530cc; padding:8px 28px; border-radius:60px; backdrop-filter:blur(2px); border:2px solid #b89ad0; color:#dfc9ff; font-size:16px; }
+    button { background:#f5c542; border:none; color:#1d1135; font-weight:bold; font-size:20px; padding:10px 30px; border-radius:50px; box-shadow:0 7px 0 #9e6018; cursor:pointer; font-family:inherit; border:3px solid #ffeaa6; transition:0.05s linear; letter-spacing:1px; }
+    button:active { transform:translateY(5px); box-shadow:0 2px 0 #9e6018; }
+    .character-select { display:flex; gap:20px; margin-bottom:10px; }
+    .char-btn { background:#3f3264; color:white; box-shadow:0 5px 0 #1e1530; font-size:16px; padding:8px 24px; }
+    .char-btn.active { background:#e74c3c; box-shadow:0 5px 0 #7b241c; }
+    .toad-msg { color:#ffd966; font-size:14px; }
+    .hint { color:#aaa; font-size:12px; margin-top:10px; text-align:center; }
+    .hint a { color:#ffd966; }
   </style>
 </head>
 <body>
 <div class="game-container">
-  <div style="display: flex; justify-content: space-between; align-items: center;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
     <div class="character-select">
       <button id="selectMario" class="char-btn active">🔴 马里奥</button>
       <button id="selectLuigi" class="char-btn">🟢 路易吉</button>
@@ -117,32 +40,28 @@
     </div>
     <button id="restartBtn">🔄 重新开始</button>
   </div>
+  <div class="hint">
+    🎮 空格键重新开始 · 
+    <a href="https://github.com/你的用户名/mario-game" target="_blank">GitHub 仓库</a>
+  </div>
 </div>
 
 <script>
   (function(){
     "use strict";
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const livesSpan = document.getElementById('livesDisplay');
-    const scoreSpan = document.getElementById('scoreDisplay');
-    const stateDisplay = document.getElementById('stateDisplay');
-
-    // ---------- 贴图配置 (使用你提供的马里奥、路易吉 + 网络稳定直链) ----------
+    // ==================== 贴图配置 (你的所有直链) ====================
     const imagePaths = {
-      mario:   { url: 'https://github.com/nsqb159/maliao/raw/main/icon.png' },
-      luigi:   { url: 'https://github.com/nsqb159/maliao/raw/main/1%20(2).png' },
-      goomba:  { url: 'https://i.ibb.co/S0Xz8Pb/goomba.png' },           // 栗宝宝 (网络直链)
-      bowser:  { url: 'https://i.ibb.co/0j0ZkHc/bowser.png' },           // 库巴
-      mushroom:{ url: 'https://i.ibb.co/Cn8K40N/mushroom.png' },         // 蘑菇
-      coin:    { url: 'https://i.ibb.co/HXbN4K0/coin.png' },             // 金币
-      peach:   { url: 'https://i.ibb.co/LQ6nz5L/peach.png' },            // 碧姬公主
-      toad:    { url: 'https://i.ibb.co/qJp2XQV/toad.png' },             // 奇诺比奥
-      tiles:   { url: 'https://i.ibb.co/1Gz0tK1/tiles.png' }            // 场景图块集 (18x18)
+      mario:    'https://github.com/nsqb159/maliao/raw/main/icon.png',
+      luigi:    'https://github.com/nsqb159/maliao/raw/main/1%20(2).png',
+      goomba:   'https://cik07-cos.7moor-fs2.com/im/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/950f372fb1ba57e7/libaobao%20(1).png',
+      bowser:   'https://cik07-cos.7moor-fs2.com/im/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/904d46c89dc7a9a0/kuba%20(1).png',
+      mushroom: 'https://i.ibb.co/mVTr9xLC/73aaeac5-3e1d-4cb3-b884-0a1cb6b3908f.png',
+      coin:     'https://i.ibb.co/JP49htS/jb-1.png',
+      peach:    'https://i.ibb.co/VcfJJ17q/abac-1.png',
+      tiles:    'https://docs.unity3d.com/cn/2019.4/uploads/Main/TilePalette_ToolRow.png'
     };
 
-    // 预加载所有图片
     const images = {};
     let loadedCount = 0;
     const totalImages = Object.keys(imagePaths).length;
@@ -157,19 +76,19 @@
           if (loadedCount === totalImages) callback();
         };
         img.onerror = () => {
-          console.warn(`图片加载失败: ${key}, 将使用纯色代替`);
+          console.warn(`图片加载失败: ${key}, 使用纯色代替`);
           loadedCount++;
           if (loadedCount === totalImages) callback();
         };
-        img.src = imagePaths[key].url;
+        img.src = imagePaths[key];
         images[key] = img;
       }
     }
 
-    // ---------- 角色参数 ----------
+    // ==================== 角色参数 ====================
     const characters = {
-      mario: { jumpForce: -9.8, moveSpeed: 4.5, friction: 0.72, name: 'MARIO' },
-      luigi: { jumpForce: -11.0, moveSpeed: 4.8, friction: 0.65, name: 'LUIGI' }
+      mario: { jumpForce: -9.8, moveSpeed: 4.5, friction: 0.72, name: 'MARIO', color: '#d82828' },
+      luigi: { jumpForce: -11.0, moveSpeed: 4.8, friction: 0.65, name: 'LUIGI', color: '#2e8b57' }
     };
     let currentChar = 'mario';
 
@@ -200,17 +119,14 @@
     let cameraX = 0;
     let toadTalkTimer = 0;
 
-    // ---------- 关卡构建 ----------
+    // ==================== 关卡数据 ====================
     function buildLevel() {
       platforms = [];
       enemies = [];
       items = [];
       fireballs = [];
 
-      // 大地
       platforms.push({ x: 0, y: 480, w: 2800, h: 60, type: 'floor' });
-
-      // 浮动平台
       platforms.push({ x: 200, y: 410, w: 110, h: 20, type: 'floor' });
       platforms.push({ x: 380, y: 340, w: 90, h: 20, type: 'floor' });
       platforms.push({ x: 520, y: 270, w: 80, h: 20, type: 'floor' });
@@ -222,7 +138,6 @@
       platforms.push({ x: 1700, y: 450, w: 200, h: 40, type: 'floor' });
       platforms.push({ x: 1950, y: 420, w: 150, h: 20, type: 'floor' });
 
-      // 砖块 & 问号砖
       platforms.push({ x: 240, y: 330, w: 40, h: 40, type: 'question', item: 'mushroom' });
       platforms.push({ x: 430, y: 260, w: 40, h: 40, type: 'question', item: 'coin' });
       platforms.push({ x: 550, y: 190, w: 40, h: 40, type: 'brick' });
@@ -231,14 +146,12 @@
       platforms.push({ x: 1060, y: 170, w: 40, h: 40, type: 'question', item: 'coin' });
       platforms.push({ x: 1260, y: 270, w: 40, h: 40, type: 'brick' });
 
-      // 敌人 (栗宝宝)
       enemies.push({ x: 300, y: 452, w: 32, h: 28, vx: 1.4, type: 'goomba', alive: true });
       enemies.push({ x: 650, y: 352, w: 32, h: 28, vx: -1.8, type: 'goomba', alive: true });
       enemies.push({ x: 900, y: 282, w: 32, h: 28, vx: 1.5, type: 'goomba', alive: true });
       enemies.push({ x: 1150, y: 322, w: 32, h: 28, vx: -1.6, type: 'goomba', alive: true });
       enemies.push({ x: 1500, y: 392, w: 32, h: 28, vx: 1.9, type: 'goomba', alive: true });
 
-      // 库巴 Boss
       enemies.push({
         x: 2050, y: 360, w: 70, h: 70, vx: 2.4, type: 'bowser', alive: true,
         health: 3, invincible: 0, direction: 1, fireCooldown: 0
@@ -265,8 +178,7 @@
 
     function updateDisplay() {
       livesSpan.textContent = lives;
-      let scoreStr = String(score).padStart(5, '0').slice(0,5);
-      scoreSpan.textContent = scoreStr;
+      scoreSpan.textContent = String(score).padStart(5, '0').slice(0,5);
     }
 
     function rectCollide(r1, r2) {
@@ -334,7 +246,6 @@
       player.vx *= charStats.friction;
       if (Math.abs(player.vx) < 0.15) player.vx = 0;
 
-      // 敌人逻辑
       for (let e of enemies) {
         if (!e.alive) continue;
         if (e.type === 'bowser') {
@@ -379,7 +290,6 @@
         }
       }
 
-      // 火球
       for (let i=fireballs.length-1; i>=0; i--) {
         let f = fireballs[i];
         f.x += f.vx; f.y += f.vy; f.vy += 0.2;
@@ -389,7 +299,6 @@
         }
       }
 
-      // 道具
       for (let i=items.length-1; i>=0; i--) {
         let it = items[i];
         it.x += it.vx; it.y += it.vy; it.vy += 0.3;
@@ -428,27 +337,21 @@
 
     function die() { lives=0; gameActive=false; gameOver=true; stateDisplay.innerText='💀 GAME OVER'; updateDisplay(); }
 
-    // ---------- 绘图 (使用贴图) ----------
     function draw() {
       ctx.clearRect(0, 0, 960, 540);
       ctx.save();
       ctx.translate(-cameraX, 0);
 
-      // 天空
       ctx.fillStyle = '#5c94fc'; ctx.fillRect(cameraX,0,960,540);
-      
-      // 云
       ctx.fillStyle = '#ffffffc0';
       ctx.beginPath(); ctx.arc(cameraX+200, 80, 40, 0, Math.PI*2); ctx.fill();
       
-      // 平台 (使用tiles图块)
       platforms.forEach(p => {
-        if (images.tiles && images.tiles.complete) {
-          // 简单映射: floor=第一块, brick=第二块, question=第三块
-          let sx = 0, sy = 0;
-          if (p.type === 'brick') sx = 18;
-          else if (p.type === 'question') sx = 36;
-          ctx.drawImage(images.tiles, sx, 0, 18, 18, p.x, p.y, p.w, p.h);
+        if (images.tiles && images.tiles.complete && images.tiles.naturalWidth > 0) {
+          let sx = 0;
+          if (p.type === 'brick') sx = 64;
+          else if (p.type === 'question') sx = 128;
+          ctx.drawImage(images.tiles, sx, 0, 64, 64, p.x, p.y, p.w, p.h);
         } else {
           ctx.fillStyle = p.type === 'floor' ? '#8b5e3c' : '#b87c4d';
           ctx.fillRect(p.x, p.y, p.w, p.h);
@@ -458,12 +361,11 @@
         }
       });
 
-      // 敌人
       enemies.forEach(e => {
         if (!e.alive) return;
-        if (e.type === 'goomba' && images.goomba && images.goomba.complete) {
+        if (e.type === 'goomba' && images.goomba && images.goomba.complete && images.goomba.naturalWidth>0) {
           ctx.drawImage(images.goomba, e.x, e.y, e.w, e.h);
-        } else if (e.type === 'bowser' && images.bowser && images.bowser.complete) {
+        } else if (e.type === 'bowser' && images.bowser && images.bowser.complete && images.bowser.naturalWidth>0) {
           ctx.drawImage(images.bowser, e.x, e.y, e.w, e.h);
         } else {
           ctx.fillStyle = e.type==='goomba' ? '#8b4513' : '#2e6b2e';
@@ -475,41 +377,36 @@
         }
       });
 
-      // 道具
       items.forEach(it => {
-        if (it.type === 'mushroom' && images.mushroom && images.mushroom.complete) {
+        if (it.type === 'mushroom' && images.mushroom && images.mushroom.complete && images.mushroom.naturalWidth>0) {
           ctx.drawImage(images.mushroom, it.x, it.y, it.w, it.h);
+        } else if (it.type === 'coin' && images.coin && images.coin.complete && images.coin.naturalWidth>0) {
+          ctx.drawImage(images.coin, it.x, it.y, it.w, it.h);
         } else {
           ctx.fillStyle = '#ff4f4f'; ctx.fillRect(it.x, it.y, it.w, it.h);
         }
       });
 
-      // 碧姬公主
-      if (images.peach && images.peach.complete) {
+      if (images.peach && images.peach.complete && images.peach.naturalWidth>0) {
         ctx.drawImage(images.peach, 2400, 400, 40, 60);
       } else {
         ctx.fillStyle = '#ffb6c1'; ctx.fillRect(2400, 400, 40, 60);
       }
 
-      // 奇诺比奥
-      if (images.toad && images.toad.complete) {
-        ctx.drawImage(images.toad, 100, 430, 30, 40);
-      } else {
-        ctx.fillStyle = '#f0d0b0'; ctx.fillRect(100, 430, 30, 40);
-      }
+      ctx.fillStyle = '#f0d0b0'; ctx.fillRect(100, 430, 30, 40);
+      ctx.fillStyle = '#c44'; ctx.beginPath(); ctx.arc(115, 420, 15, 0, 2*Math.PI); ctx.fill();
       if (toadTalkTimer > 0) {
         ctx.fillStyle = '#fff9e0'; ctx.fillRect(60, 370, 220, 30);
         ctx.fillStyle = '#2d1b0e'; ctx.font='12px monospace'; ctx.fillText('🍄 "公主在另一座城堡!"', 70, 390);
         toadTalkTimer--;
       }
 
-      // 玩家
       if (player.invincible % 8 < 4 || player.invincible <=0) {
         const playerImg = currentChar === 'mario' ? images.mario : images.luigi;
-        if (playerImg && playerImg.complete) {
+        if (playerImg && playerImg.complete && playerImg.naturalWidth > 0) {
           ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
         } else {
-          ctx.fillStyle = characters[currentChar].color || '#d82828';
+          ctx.fillStyle = characters[currentChar].color;
           ctx.fillRect(player.x, player.y, player.width, player.height);
         }
       }
@@ -521,7 +418,6 @@
       else stateDisplay.innerText = '🏃 ' + characters[currentChar].name;
     }
 
-    // ---------- 键盘控制 ----------
     const keys = { left: false, right: false, up: false };
     window.addEventListener('keydown', e => {
       if (e.key === 'ArrowLeft') keys.left = true;
@@ -556,7 +452,6 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // 角色选择
     document.getElementById('selectMario').addEventListener('click', () => {
       currentChar = 'mario';
       document.getElementById('selectMario').classList.add('active');
@@ -571,7 +466,6 @@
     });
     document.getElementById('restartBtn').addEventListener('click', resetGame);
 
-    // 启动: 先加载图片
     loadAllImages(() => {
       buildLevel();
       gameLoop();
