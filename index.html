@@ -266,11 +266,11 @@ const CHEAT_CODE=['9','9','9'];
 // External sprite images
 const spriteImages={};
 const SPRITE_URLS={
-  mario:'https://github.com/nsqb159/maliao/blob/main/images/mario.png?raw=true',
-  luigi:'https://github.com/nsqb159/maliao/blob/main/images/luigi.png?raw=true',
-  bowser:'https://github.com/nsqb159/maliao/blob/main/images/bowser.png?raw=true',
-  wuqi:'https://github.com/nsqb159/maliao/blob/main/images/wuqi.png?raw=true',
-  mushroom:'https://github.com/nsqb159/maliao/blob/main/images/mushroom.png?raw=true'
+  mario:'./images/mario.png',
+  luigi:'./images/luigi.png',
+  bowser:'./images/bowser.png',
+  wuqi:'./images/wuqi.png',
+  mushroom:'./images/mushroom.png'
 };
 let spritesLoaded={mario:false,luigi:false,bowser:false,wuqi:false,mushroom:false};
 
@@ -782,9 +782,10 @@ function handleCollisions() {
     if(!rectCollide(pr,plr)) continue;
     const dx=(pr.x+pr.w/2)-(plr.x+plr.w/2), dy=(pr.y+pr.h/2)-(plr.y+plr.h/2);
     const ox=(pr.w/2+plr.w/2)-Math.abs(dx), oy=(pr.h/2+plr.h/2)-Math.abs(dy);
-    if(ox<oy){ if(dx>0)player.x=plr.x+plr.w; else player.x=plr.x-player.width; player.vx=0; }
-    else{ if(dy>0){player.y=plr.y+plr.h;player.vy=0;} else{player.y=plr.y-player.height;player.vy=0;player.onGround=true;} }
-    if(player.vy<0&&dy>0&&(pl.type==='question'||pl.type==='brick')){
+    // Trigger question/brick when player is jumping into them from any direction
+    let blockTriggered = false;
+    if((pl.type==='question'||pl.type==='brick')&&player.vy<0){
+      blockTriggered = true;
       if(pl.type==='question'&&pl.item){
         if(pl.item==='mushroom') items.push({x:pl.x+5,y:pl.y-30,w:28,h:28,vx:2,vy:-3,type:'mushroom'});
         else if(pl.item==='food') items.push({x:pl.x+5,y:pl.y-30,w:28,h:28,vx:2,vy:-3,type:'food'});
@@ -793,6 +794,16 @@ function handleCollisions() {
         pl.type='used';pl.item=null;
       } else if(pl.type==='brick'){
         if(player.big){const idx=platforms.indexOf(pl);if(idx>-1){spawnBrickParticles(pl.x,pl.y);platforms.splice(idx,1);}score+=50;}
+        else{pl.bumpAnim=8;} // Small player: bump animation
+      }
+      player.vy=2; // Bounce player down after hitting block
+    }
+    // Normal collision resolution (skip if block was destroyed)
+    if(!blockTriggered||pl.type==='used'){
+      if(ox<oy){ if(dx>0)player.x=plr.x+plr.w; else player.x=plr.x-player.width; player.vx=0; }
+      else{
+        if(dy>0){player.y=plr.y+plr.h;player.vy=0;}
+        else{player.y=plr.y-player.height;player.vy=0;player.onGround=true;}
       }
     }
     pr.x=player.x;pr.y=player.y;
@@ -985,7 +996,7 @@ function update(){
     if(it.x<cameraX-50||it.x>cameraX+W+50){items.splice(i,1);continue;}
     if(rectCollide({x:player.x,y:player.y,w:player.width,h:player.height},{x:it.x,y:it.y,w:it.w,h:it.h})){
       if(it.type==='mushroom'&&!player.big){player.big=true;player.height=56;player.width=36;player.y-=14;score+=1000;spawnCoinParticles(player.x+player.width/2,player.y);}
-      else if(it.type==='food'){player.invincible=Math.max(player.invincible,300);score+=500;spawnCoinParticles(player.x+player.width/2,player.y);}
+      else if(it.type==='food'){if(!player.big){player.big=true;player.height=56;player.width=36;player.y-=14;}player.invincible=Math.max(player.invincible,300);score+=500;spawnCoinParticles(player.x+player.width/2,player.y);}
       else if(it.type==='weapon'){player.hasWeapon=true;player.weaponCooldown=0;score+=300;spawnCoinParticles(player.x+player.width/2,player.y);}
       items.splice(i,1);
     }
@@ -1291,12 +1302,15 @@ function drawPlatformTile(p,theme){
 }
 
 function drawBrick(p,theme){
-  ctx.fillStyle=theme.brickBase;ctx.fillRect(p.x,p.y,p.w,p.h);
+  const bumpOff = (p.bumpAnim||0) > 0 ? -Math.sin((p.bumpAnim)/8*Math.PI)*6 : 0;
+  if(p.bumpAnim>0) p.bumpAnim--;
+  const bx=p.x, by=p.y+bumpOff;
+  ctx.fillStyle=theme.brickBase;ctx.fillRect(bx,by,p.w,p.h);
   ctx.fillStyle=theme.brickMortar;
-  ctx.fillRect(p.x,p.y,p.w,2);ctx.fillRect(p.x,p.y+p.h/2-1,p.w,2);ctx.fillRect(p.x,p.y+p.h-2,p.w,2);
-  ctx.fillRect(p.x+p.w/2-1,p.y,2,p.h/2);ctx.fillRect(p.x,p.y+p.h/2,2,p.h/2);ctx.fillRect(p.x+p.w-2,p.y+p.h/2,2,p.h/2);
-  ctx.fillStyle=theme.brickHighlight;ctx.fillRect(p.x+2,p.y+2,p.w/2-3,p.h/2-3);
-  ctx.strokeStyle=theme.brickMortar;ctx.lineWidth=1.5;ctx.strokeRect(p.x+0.5,p.y+0.5,p.w-1,p.h-1);
+  ctx.fillRect(bx,by,p.w,2);ctx.fillRect(bx,by+p.h/2-1,p.w,2);ctx.fillRect(bx,by+p.h-2,p.w,2);
+  ctx.fillRect(bx+p.w/2-1,by,2,p.h/2);ctx.fillRect(bx,by+p.h/2,2,p.h/2);ctx.fillRect(bx+p.w-2,by+p.h/2,2,p.h/2);
+  ctx.fillStyle=theme.brickHighlight;ctx.fillRect(bx+2,by+2,p.w/2-3,p.h/2-3);
+  ctx.strokeStyle=theme.brickMortar;ctx.lineWidth=1.5;ctx.strokeRect(bx+0.5,by+0.5,p.w-1,p.h-1);
 }
 
 function drawQuestionBlock(p){
